@@ -1,0 +1,14 @@
+repos:
+- repo: local
+  hooks:
+  - id: gitleaks
+    name: Gitleaks
+    language: docker_image
+    entry: zricethezav/gitleaks:v7.6.1
+    args:
+    - --config-path
+    - /src/.gitleaks.toml
+    - --path
+    - /src/src
+    - --verbose
+    - --no-git

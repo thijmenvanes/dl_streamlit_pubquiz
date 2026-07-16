@@ -1,0 +1,14 @@
+_commit: v1.16.0
+_src_path: git@github.com:pondatalab/dl_template_copier.git
+application_type: one_off
+author_email: thijmen.van.es@pon.com
+author_name: Thijmen van Es
+copier_template_guid: 292e6c68-40bf-77ab-34cb-a63ef586b606
+copier_template_name: dl_template_copier
+environment_file: data-science.env
+main_python_version: 3.14.5
+opco: dl
+project: streamlit_pubquiz
+project_slug: dl_streamlit_pubquiz
+solution: ''
+support_databases: []

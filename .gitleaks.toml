@@ -1,0 +1,12 @@
+title = "gitleaks config"
+
+[[rules]]
+    description = "AWS Access Key"
+    id = "aws-access-key"
+    regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+    tags = ["key", "AWS"]
+
+[[rules]]
+  description = "Generic Credential"
+  regex = '''(?i)(dbpasswd|access_key|apikey|api_key|secret|password|pw|token)[^,:\n"]{0,20}?\s*=\s*['|"]([0-9a-zA-Z-_\/+!{}/=]{2,120})['|"]'''
+  tags = ["key", "API", "generic"]

@@ -1,0 +1,6 @@
+security:
+    ignore-vulnerabilities:
+        51668:
+            reason: not using the vulnerable function and unable to update because of snowflake-sqlalchemy
+            expires: '2025-08-16'
+        

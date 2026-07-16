@@ -1,0 +1,91 @@
+name: Review
+
+on:
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      session: ${{ steps.set-matrix.outputs.session }}
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Use nox
+        uses: wntrblm/nox@2024.03.02
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Inject dependencies
+        run: |
+          pipx inject nox nox-poetry
+          pipx inject poetry poetry-plugin-export
+
+      - name: Set matrix
+        id: set-matrix
+        shell: bash
+        run: echo session=$(nox --json -l | jq -c '[.[].session]') | tee --append $GITHUB_OUTPUT
+  nox:
+    name: ${{ matrix.session }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        session: ${{ fromJson(needs.setup.outputs.session) }}
+    needs: [ setup ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Use nox
+        uses: wntrblm/nox@2024.03.02
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Inject dependencies
+        run: |
+          pipx inject nox nox-poetry
+          pipx inject poetry poetry-plugin-export
+  
+      - name: Set environment variable and current repository
+        run: |
+          if [ "$GITHUB_REF" = "refs/heads/development" ]; then
+            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+          elif [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+          fi
+          echo "PROJECT_NAME=datalab-dl-streamlit-pubquiz" >> $GITHUB_ENV
+          echo "CLI_AWS_REGION=eu-west-1" >> $GITHUB_ENV
+ 
+      - name: Configure AWS Credentials datalab-general (a.k.a. nonprod)
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.CLI_AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_NONPROD }}
+
+      - name: Authenticate CodeArtifact
+        run: echo CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain ${{ vars.CODEARTIFACT_DOMAIN_PROD }} --domain-owner ${{ vars.CODEARTIFACT_DOMAIN_OWNER_ACCOUNT_ID_PROD }} --query authorizationToken --output text --region eu-west-1 ) >> $GITHUB_ENV
+
+      - name: Add datalab-shared-python-repo-prod repo to poetry
+        env:
+          CODEARTIFACT_URL_PULL: ${{ vars.CODEARTIFACT_REGISTRY_URL_PULL_PROD }}
+          CODEARTIFACT_AUTH_TOKEN: ${{ env.CODEARTIFACT_AUTH_TOKEN }}
+
+        run: |
+          poetry config repositories.datalab-shared-python-repo-prod https://$CODEARTIFACT_URL_PULL
+          poetry config http-basic.datalab-shared-python-repo-prod aws $CODEARTIFACT_AUTH_TOKEN
+
+      - name: Session ${{ matrix.session }}
+        run: nox -s "${{ matrix.session }}"
