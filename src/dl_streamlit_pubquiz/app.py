@@ -1,82 +1,99 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
-import pandas as pd
-from datetime import datetime
+import requests
 
-# 1. Page Configuration (optimized for mobile)
+# 1. Page Configuration (Forced centering for mobile optimization)
 st.set_page_config(
     page_title="DS Team Quiz",
     page_icon="🧠",
     layout="centered"
 )
 
-# 2. Establish Connection to Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
+# 2. Securely Fetch Credentials
+# Locally, these pull from .streamlit/secrets.toml
+# In production, these pull from your Streamlit Cloud Dashboard settings
+NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
+DATABASE_ID = st.secrets["DATABASE_ID"]
 
-# Simple Session State to track if they have already submitted in this session
+# 3. Track Session State (Prevents users from re-submitting if they refresh)
 if "submitted" not in st.session_state:
     st.session_state.submitted = False
 
-# App Header
+# App UI Header
 st.title("🧠 Data Science Pub Quiz")
-st.subheader("Round 1: The Basics")
+st.subheader("Round 1: Machine Learning & Stats")
 
-# If they already answered, show a success screen instead of the quiz
+# 4. App Flow Control
 if st.session_state.submitted:
-    st.success("🎉 Your answers have been locked in! Waiting for the host...")
+    st.success("🎉 Your answers have been locked into Notion! Waiting for the host...")
     st.balloons()
 else:
-    # We wrap everything in a form so it only writes to the sheet when they hit "Submit"
+    # Everything inside st.form stays frozen until the user hits the submit button
     with st.form("quiz_form"):
-        st.write("### Identify Your Team")
-        team_name = st.text_input("What is your Team Name?", placeholder="e.g., Overfitted Outliers")
+        st.write("### Step 1: Identify Your Team")
+        team_name = st.text_input("What is your Team Name?", placeholder="e.g., The Overfitted Outliers")
 
         st.divider()
-        st.write("### Questions")
+        st.write("### Step 2: Answer the Questions")
 
-        # Question 1
+        # Question 1 (Using mobile-friendly segmented controls)
         q1_ans = st.segmented_control(
-            "1. Which activation function can suffer from the 'dying' problem?",
-            options=["ReLU", "Sigmoid", "Tanh", "Leaky ReLU"]
+            "1. What does 'ReLU' stand for in neural networks?",
+            options=["Rectified Linear Unit", "Regularized Linear Unit", "Relative Linear Utility"]
         )
 
         # Question 2
         q2_ans = st.segmented_control(
-            "2. In statistics, what is Type I error?",
-            options=["False Negative", "False Positive", "Random Noise", "Overfitting"]
+            "2. Is a Random Forest model fundamentally a bagging or boosting ensemble?",
+            options=["Bagging", "Boosting", "Neither"]
         )
 
         st.divider()
-        # Submit Button
-        submit_button = st.form_submit_button("Submit Answers 🚀", use_container_width=True)
 
+        # Form Submission Button (stretching to full width makes it easier to tap on phones)
+        submit_button = st.form_submit_button("Lock In Answers 🚀", use_container_width=True)
+
+        # 5. Submission Logic
         if submit_button:
-            # Simple validation to make sure they filled everything out
+            # Frontend validation checks
             if not team_name:
                 st.error("⚠️ Please enter a team name before submitting!")
             elif not q1_ans or not q2_ans:
                 st.error("⚠️ Please answer all questions before submitting!")
             else:
-                with st.spinner("Locking in your answers..."):
+                with st.spinner("Transmitting answers to the quizmaster..."):
+                    # Notion API setup
+                    url = "https://api.notion.com/v1/pages"
+                    headers = {
+                        "Authorization": f"Bearer {NOTION_TOKEN}",
+                        "Content-Type": "application/json",
+                        "Notion-Version": "2022-06-28"
+                    }
+
+                    # Map the form entries cleanly to Notion's exact database schema
+                    payload = {
+                        "parent": {"database_id": DATABASE_ID},
+                        "properties": {
+                            "Team Name": {
+                                "title": [{"text": {"content": team_name}}]
+                            },
+                            "Q1 Answer": {
+                                "rich_text": [{"text": {"content": q1_ans}}]
+                            },
+                            "Q2 Answer": {
+                                "rich_text": [{"text": {"content": q2_ans}}]
+                            }
+                        }
+                    }
+
                     try:
-                        # Fetch the existing data to append to it
-                        existing_data = conn.read(ttl="0s")  # ttl=0s ensures we get fresh data
+                        # Make the API call
+                        response = requests.post(url, json=payload, headers=headers)
 
-                        # Create a new row of data
-                        new_row = pd.DataFrame([{
-                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "team_name": team_name,
-                            "q1_answer": q1_ans,
-                            "q2_answer": q2_ans
-                        }])
-
-                        # Combine and update
-                        updated_df = pd.concat([existing_data, new_row], ignore_index=True)
-                        conn.update(data=updated_df)
-
-                        # Mark session as submitted so the form disappears
-                        st.session_state.submitted = True
-                        st.rerun()
-
+                        if response.status_code == 200:
+                            # Update state so the quiz vanishes and showing the success banner
+                            st.session_state.submitted = True
+                            st.rerun()
+                        else:
+                            st.error(f"Notion API error ({response.status_code}): {response.text}")
                     except Exception as e:
-                        st.error(f"Oh no! Something went wrong: {e}")
+                        st.error(f"Failed to connect to Notion: {e}")

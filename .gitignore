@@ -80,3 +80,6 @@ data/*
 !data/.gitkeep
 dashboards/*
 !dashboards/.gitkeep
+
+# Secrets
+.streamlit/
