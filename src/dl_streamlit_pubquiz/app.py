@@ -638,7 +638,7 @@ class LingoGame:
 
 # 1. Page Configuration (Forced centering for mobile optimization)
 st.set_page_config(
-    page_title="DS Team Quiz",
+    page_title="Datalab Pubquiz",
     page_icon="🧠",
     layout="centered"
 )
@@ -834,10 +834,10 @@ else:
                                 "rich_text": [{"text": {"content": q2_ans}}]
                             },
                             "Score woord-5": {
-                                "number": [{"text": {"content": q2_ans}}]
+                                "number": _calculate_score(st.session_state.lingo_game.attempts_needed)
                             },
                             "Score woord-6": {
-                                "number": st.session_state.lingo_game_6.attempts_needed
+                                "number": _calculate_score(st.session_state.lingo_game_6.attempts_needed)
                             }
                         }
                     }
