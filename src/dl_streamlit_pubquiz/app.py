@@ -664,7 +664,7 @@ if "show_question_4" not in st.session_state:
 
 if "lingo_game_6" not in st.session_state:
     st.session_state.lingo_game_6 = LingoGame(
-        secret_word="quizje",
+        secret_word="zuiden",
         valid_words=VALID_6_LETTER_WORDS,
         word_length=6,
     )
@@ -687,15 +687,13 @@ else:
         st.write("### Stap 2: Beantwoord de vragen")
 
         # Question 1 (Using mobile-friendly segmented controls)
-        q1_ans = st.segmented_control(
-            "Beantwoord vraag 1 (wacht op de quizmaster)",
-            options=["Rectified Linear Unit", "Regularized Linear Unit", "Relative Linear Utility"]
+        q1_ans = st.number_input(
+            "Beantwoord vraag 1 (wacht op de quizmaster)"
         )
 
         # Question 2
-        q2_ans = st.segmented_control(
-            "2. Is a Random Forest model fundamentally a bagging or boosting ensemble?",
-            options=["Bagging", "Boosting", "Neither"]
+        q2_ans = st.number_input(
+            "Beantwoord vraag 2 (wacht op de quizmaster)"
         )
 
         st.divider()
@@ -828,10 +826,10 @@ else:
                                 "title": [{"text": {"content": team_name}}]
                             },
                             "Q1 Answer": {
-                                "rich_text": [{"text": {"content": q1_ans}}]
+                                "number": q1_ans
                             },
                             "Q2 Answer": {
-                                "rich_text": [{"text": {"content": q2_ans}}]
+                                "number": q2_ans
                             },
                             "Score woord-5": {
                                 "number": _calculate_score(st.session_state.lingo_game.attempts_needed)
