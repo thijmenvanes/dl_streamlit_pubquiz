@@ -618,7 +618,7 @@ class LingoGame:
             self.attempts_needed = None
             return True, (
                 f"Helaas, je hebt geen pogingen meer. "
-                f"Het woord was: {self.secret_word}"
+                f"Het woord was: {self.secret_word.upper()}"
             )
 
         return True, " "
@@ -743,7 +743,7 @@ else:
                 else:
                     st.error(
                         f"Helaas, je hebt geen pogingen meer. "
-                        f"Het woord was: {game.secret_word}"
+                        f"Het woord was: {game.secret_word.upper()}"
                     )
 
         st.divider()
@@ -793,7 +793,7 @@ else:
                 else:
                     st.error(
                         f"Helaas, je hebt geen pogingen meer. "
-                        f"Het woord was: {game_6.secret_word}"
+                        f"Het woord was: {game_6.secret_word.upper()}"
                     )
 
         st.divider()
